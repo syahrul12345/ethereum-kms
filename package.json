@@ -1,0 +1,20 @@
+{
+  "name": "ethereum-kms",
+  "version": "1.0.1",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "NODE_ENV=production node dist/index.js"
+  },
+  "dependencies": {
+    "asn1.js": "^5.4.1",
+    "aws-sdk": "^2.850.0",
+    "js-sha3": "^0.8.0",
+    "source-map": "^0.7.3",
+    "web3": "^1.3.4",
+    "web3-core": "^1.3.4"
+  },
+  "types": "dist/index.d.ts",
+  "prepublish": "tsc"
+}

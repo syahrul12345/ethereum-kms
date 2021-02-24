@@ -1,13 +1,13 @@
 {
   "name": "ethereum-kms",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
     "start": "NODE_ENV=production node dist/index.js",
-    "prepublish": "tsc",
+    "prepublish": "tsc"
   },
   "dependencies": {
     "asn1.js": "^5.4.1",

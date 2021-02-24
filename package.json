@@ -1,13 +1,19 @@
 {
   "name": "ethereum-kms",
-  "version": "1.0.4",
+  "description": "KMS library to sign ethereum transactions",
+  "version": "1.0.5",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
+  "author": "Syahrul Nizam",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syahrul12345/ethereum-kms.git"
+  },
   "scripts": {
-    "build": "tsc",
-    "start": "NODE_ENV=production node dist/index.js",
-    "prepublish": "tsc"
+    "build": "rm -rf build/ && npm run compile",
+    "compile": "tsc",
+    "prepublishOnly": "npm run compile"
   },
   "dependencies": {
     "asn1.js": "^5.4.1",

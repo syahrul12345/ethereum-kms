@@ -6,7 +6,7 @@
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
-    "declaration": true,
+    "declaration": true
   },
-  "include": ["src/**/*"]
+  "include": ["__tests__", "scripts", "src"]
 }

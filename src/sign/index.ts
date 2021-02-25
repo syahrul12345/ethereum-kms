@@ -14,6 +14,10 @@ export class KMSSigner {
   EcdsaSigAsnParse: any;
   EcdsaPubKey: any;
   chain: "mainnet" | "kovan" | "ropsten";
+  pubKey: any;
+  ethAddr: any;
+  sig: any;
+  recoveredPubAddr: any;
   constructor(
     access_key_id: string,
     access_secret: string,
@@ -197,38 +201,40 @@ export class KMSSigner {
     );
     return { pubKey, v };
   };
-
-  sendPayload = async (payload: TxData) => {
+  setMetadata = async () => {
     //Returns a DER encoded public key from amazon KMS directly
-    let pubKey = await this.getPublicKey(this.keyId);
+    this.pubKey = await this.getPublicKey(this.keyId);
     //Calculate the ethereum address from the DER public key
-    let ethAddr = this.getEthereumAddress(pubKey.PublicKey as Buffer);
+    this.ethAddr = this.getEthereumAddress(this.pubKey.PublicKey as Buffer);
     // Hash of the public key
-    let ethAddrHash = ethutil.keccak(Buffer.from(ethAddr));
+    let ethAddrHash = ethutil.keccak(Buffer.from(this.ethAddr));
     // Get the signature value by SIGNING the ethaddrhash. This is the first time we are signing. We merely want the r and s
     // Asks KMS to sign the payload
     // KMS returns DER encoded signature
     // Decompress and calculate r and s
     // Invert if s is larger than the half of secp256k1
     // We get the finalized script
-    let sig = await this.findEthereumSig(ethAddrHash);
+    this.sig = await this.findEthereumSig(ethAddrHash);
     //Try to recover ethereum address given the signature, and we choose if its 27 or 28 from the r and s
-    let recoveredPubAddr = this.findRightKey(
+    this.recoveredPubAddr = this.findRightKey(
       ethAddrHash,
-      sig.r,
-      sig.s,
-      ethAddr
+      this.sig.r,
+      this.sig.s,
+      this.ethAddr
     );
-    console.log(recoveredPubAddr);
+    console.log(this.recoveredPubAddr);
+  };
+  sendPayload = async (payload: TxData) => {
     // The payload we want to sign
+    // We put it with the dummy r,s,v so that we can serialized the FROM field
     const txParams: TxData = {
       nonce: payload.nonce
         ? payload.nonce
-        : await this.web3.eth.getTransactionCount(ethAddr),
+        : await this.web3.eth.getTransactionCount(this.ethAddr),
       ...payload,
-      r: sig.r.toBuffer(),
-      s: sig.s.toBuffer(),
-      v: recoveredPubAddr.v,
+      r: this.sig.r.toBuffer(),
+      s: this.sig.s.toBuffer(),
+      v: this.recoveredPubAddr.v,
     };
     const tx = new Transaction(txParams, {
       chain: this.chain,
@@ -236,11 +242,16 @@ export class KMSSigner {
 
     let txHash = tx.hash(false);
     //We sign the payload that we want and this will create the correct r and s
-    sig = await this.findEthereumSig(txHash);
-    recoveredPubAddr = this.findRightKey(txHash, sig.r, sig.s, ethAddr);
-    tx.r = sig.r.toBuffer();
-    tx.s = sig.s.toBuffer();
-    tx.v = new BN(recoveredPubAddr.v).toBuffer();
+    const correctSig = await this.findEthereumSig(txHash);
+    const correctRecoveredPubAddr = this.findRightKey(
+      txHash,
+      correctSig.r,
+      correctSig.s,
+      this.ethAddr
+    );
+    tx.r = correctSig.r.toBuffer();
+    tx.s = correctSig.s.toBuffer();
+    tx.v = new BN(correctRecoveredPubAddr.v).toBuffer();
     console.log(
       process.env.NODE_ENV === "production"
         ? ""

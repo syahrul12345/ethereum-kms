@@ -11,8 +11,9 @@
     "url": "git+https://github.com/syahrul12345/ethereum-kms.git"
   },
   "scripts": {
-    "build": "rm -rf dist/ && npm run compile",
     "compile": "tsc",
+    "build": "rm -rf dist/ && npm run compile",
+    "start": "NODE_ENV=production && node ./dist/src/index.js",
     "prepublishOnly": "npm run compile",
     "test": "NODE_ENV=test jest"
   },

@@ -1,2 +1,2 @@
 import { KMSSigner } from "./sign";
-export { KMSSigner }
+export { KMSSigner };

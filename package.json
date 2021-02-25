@@ -1,9 +1,9 @@
 {
   "name": "ethereum-kms",
   "description": "KMS library to sign ethereum transactions",
-  "version": "1.0.6",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "1.0.7",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "license": "MIT",
   "author": "Syahrul Nizam",
   "repository": {
@@ -12,10 +12,10 @@
   },
   "scripts": {
     "compile": "tsc",
-    "build": "rm -rf dist/ && npm run compile",
+    "build": "rm -rf dist/ && tsc",
     "start": "NODE_ENV=production && node ./dist/src/index.js",
     "prepublishOnly": "npm run compile",
-    "test": "NODE_ENV=test jest"
+    "test": "NODE_ENV=test jest \"/dist/__tests__/.*\\.test\\.js\""
   },
   "dependencies": {
     "@babel/preset-env": "^7.13.5",
@@ -29,6 +29,7 @@
     "web3-core": "^1.3.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.13.1",
     "@types/jest": "^26.0.20"
   }
 }

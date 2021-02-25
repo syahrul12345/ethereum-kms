@@ -75,12 +75,6 @@ export class KMSSigner {
   };
 
   getEthereumAddress = (publicKey: Buffer): string => {
-    console.log(
-      process.env.NODE_ENV === "production"
-        ? ""
-        : "Encoded Pub Key: " + publicKey.toString("hex")
-    );
-
     // The public key is ASN1 encoded in a format according to
     // https://tools.ietf.org/html/rfc5480#section-2
     // I used https://lapo.it/asn1js to figure out how to parse this
@@ -95,11 +89,6 @@ export class KMSSigner {
     const address = keccak256(pubKeyBuffer); // keccak256 hash of publicKey
     const buf2 = Buffer.from(address, "hex");
     const EthAddr = "0x" + buf2.slice(-20).toString("hex"); // take last 20 bytes as ethereum adress
-    console.log(
-      process.env.NODE_ENV === "production"
-        ? ""
-        : "Generated Ethreum address: " + EthAddr
-    );
     return EthAddr;
   };
 
@@ -109,21 +98,10 @@ export class KMSSigner {
     if (signature.Signature == undefined) {
       throw new Error("Signature is undefined.");
     }
-    console.log(
-      process.env.NODE_ENV === "production"
-        ? ""
-        : "encoded sig: " + signature.Signature.toString("hex")
-    );
 
     let decoded = this.EcdsaSigAsnParse.decode(signature.Signature, "der");
     let r: BN = decoded.r;
     let s: BN = decoded.s;
-    console.log(
-      process.env.NODE_ENV === "production" ? "" : "r: " + r.toString(10)
-    );
-    console.log(
-      process.env.NODE_ENV === "production" ? "" : "s: " + s.toString(10)
-    );
 
     let tempsig = r.toString(16) + s.toString(16);
 
@@ -136,21 +114,10 @@ export class KMSSigner {
     // the value of s needs to be SMALLER than half of the curve
     // i.e. we need to flip s if it's greater than half of the curve
     if (s.gt(secp256k1halfN)) {
-      console.log(
-        process.env.NODE_ENV === "production"
-          ? ""
-          : "s is on the wrong side of the curve... flipping - tempsig: " +
-              tempsig +
-              " length: " +
-              tempsig.length
-      );
       // According to EIP2 https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2.md
       // if s < half the curve we need to invert it
       // s = curve.n - s
       s = secp256k1N.sub(s);
-      console.log(
-        process.env.NODE_ENV === "production" ? "" : "new s: " + s.toString(10)
-      );
       return { r, s };
     }
     // if s is less than half of the curve, we're on the "good" side of the curve, we can just return
@@ -158,26 +125,11 @@ export class KMSSigner {
   };
 
   recoverPubKeyFromSig = (msg: Buffer, r: BN, s: BN, v: number) => {
-    console.log(
-      process.env.NODE_ENV === "production"
-        ? ""
-        : "Recovering public key with msg " +
-            msg.toString("hex") +
-            " r: " +
-            r.toString(16) +
-            " s: " +
-            s.toString(16)
-    );
     let rBuffer = r.toBuffer();
     let sBuffer = s.toBuffer();
     let pubKey = ethutil.ecrecover(msg, v, rBuffer, sBuffer);
     let addrBuf = ethutil.pubToAddress(pubKey);
     var RecoveredEthAddr = ethutil.bufferToHex(addrBuf);
-    console.log(
-      process.env.NODE_ENV === "production"
-        ? ""
-        : "Recovered ethereum address: " + RecoveredEthAddr
-    );
     return RecoveredEthAddr;
   };
 
@@ -194,11 +146,6 @@ export class KMSSigner {
       v = 28;
       pubKey = this.recoverPubKeyFromSig(msg, r, s, v);
     }
-    console.log(
-      process.env.NODE_ENV === "production"
-        ? ""
-        : "Found the right ETH Address: " + pubKey + " v: " + v
-    );
     return { pubKey, v };
   };
   setMetadata = async () => {
@@ -222,9 +169,8 @@ export class KMSSigner {
       this.sig.s,
       this.ethAddr
     );
-    console.log(this.recoveredPubAddr);
   };
-  sendPayload = async (payload: TxData) => {
+  signPayload = async (payload: TxData) => {
     // The payload we want to sign
     // We put it with the dummy r,s,v so that we can serialized the FROM field
     const txParams: TxData = {
@@ -239,7 +185,6 @@ export class KMSSigner {
     const tx = new Transaction(txParams, {
       chain: this.chain,
     });
-
     let txHash = tx.hash(false);
     //We sign the payload that we want and this will create the correct r and s
     const correctSig = await this.findEthereumSig(txHash);
@@ -252,19 +197,14 @@ export class KMSSigner {
     tx.r = correctSig.r.toBuffer();
     tx.s = correctSig.s.toBuffer();
     tx.v = new BN(correctRecoveredPubAddr.v).toBuffer();
-    console.log(
-      process.env.NODE_ENV === "production"
-        ? ""
-        : tx.getSenderAddress().toString("hex")
-    );
-    //transaction to be propogated
-    console.log(
-      `Sending from account  ${tx.getSenderAddress().toString("hex")}`
-    );
     const serializedTx = tx.serialize().toString("hex");
+    return "0x" + serializedTx;
+  };
 
-    this.web3.eth
-      .sendSignedTransaction("0x" + serializedTx)
+  sendPayload = async (payload: TxData) => {
+    const signedString = await this.signPayload(payload);
+    await this.web3.eth
+      .sendSignedTransaction(signedString)
       .on(
         "confirmation",
         (confirmationNumber: number, receipt: TransactionReceipt) => {}

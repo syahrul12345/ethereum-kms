@@ -6,7 +6,6 @@ import ProviderEngine from "@trufflesuite/web3-provider-engine";
 // @ts-ignore
 import HookedSubprovider from "@trufflesuite/web3-provider-engine/subproviders/hooked-wallet";
 import { JSONRPCRequestPayload, JSONRPCErrorCallback } from "ethereum-protocol";
-import { Callback, JsonRPCResponse } from "web3/providers";
 
 import { KMS } from "aws-sdk";
 import { keccak256 } from "js-sha3";
@@ -279,14 +278,14 @@ export class KMSSigner {
 
   public send(
     payload: JSONRPCRequestPayload,
-    callback: JSONRPCErrorCallback | Callback<JsonRPCResponse>
+    callback: JSONRPCErrorCallback
   ): void {
     return this.engine.send.call(this.engine, payload, callback);
   }
 
   public sendAsync(
     payload: JSONRPCRequestPayload,
-    callback: JSONRPCErrorCallback | Callback<JsonRPCResponse>
+    callback: JSONRPCErrorCallback
   ): void {
     this.engine.sendAsync.call(this.engine, payload, callback);
   }

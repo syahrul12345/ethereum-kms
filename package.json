@@ -1,9 +1,9 @@
 {
   "name": "ethereum-kms",
   "description": "KMS library to sign ethereum transactions",
-  "version": "1.0.6",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "1.0.7",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "license": "MIT",
   "author": "Syahrul Nizam",
   "repository": {

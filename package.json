@@ -19,9 +19,12 @@
   },
   "dependencies": {
     "@babel/preset-env": "^7.13.5",
+    "@trufflesuite/web3-provider-engine": "^15.0.13-1",
+    "@types/ethereum-protocol": "^1.0.1",
     "asn1.js": "^5.4.1",
     "aws-sdk": "^2.850.0",
     "babel-jest": "^26.6.3",
+    "ethereum-protocol": "^1.0.1",
     "jest": "^26.6.3",
     "js-sha3": "^0.8.0",
     "source-map": "^0.7.3",

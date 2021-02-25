@@ -1,23 +1,31 @@
-import { KMS } from "aws-sdk";
-import { keccak256 } from "js-sha3";
 import * as ethutil from "ethereumjs-util";
 import Web3 from "web3";
 import BN from "bn.js";
+// @ts-ignore
+import ProviderEngine from "@trufflesuite/web3-provider-engine";
+// @ts-ignore
+import HookedSubprovider from "@trufflesuite/web3-provider-engine/subproviders/hooked-wallet";
+import { JSONRPCRequestPayload, JSONRPCErrorCallback } from "ethereum-protocol";
+import { Callback, JsonRPCResponse } from "web3/providers";
+
+import { KMS } from "aws-sdk";
+import { keccak256 } from "js-sha3";
 import { Transaction, TxData } from "ethereumjs-tx";
-import { TransactionReceipt } from "web3-core/types";
 const asn1 = require("asn1.js");
 
 export class KMSSigner {
-  kms: KMS;
-  web3: Web3;
-  keyId: string;
-  EcdsaSigAsnParse: any;
-  EcdsaPubKey: any;
-  chain: "mainnet" | "kovan" | "ropsten";
-  pubKey: any;
-  ethAddr: any;
-  sig: any;
-  recoveredPubAddr: any;
+  public kms: KMS;
+  public web3: Web3;
+  public keyId: string;
+  public EcdsaSigAsnParse: any;
+  public EcdsaPubKey: any;
+  public chain: "mainnet" | "kovan" | "ropsten";
+  public pubKey: any;
+  public ethAddr: any;
+  private sig: any;
+  private recoveredPubAddr: any;
+  public engine: ProviderEngine;
+  public pollingInterval = 4000;
   constructor(
     access_key_id: string,
     access_secret: string,
@@ -51,8 +59,54 @@ export class KMSSigner {
       );
     });
     this.chain = chain;
+
+    /**
+     * The method below binds the provider to the current kms class
+     * This effectively allows KMS to be used as a provider within truffle
+     */
+    this.engine = new ProviderEngine({
+      pollingInterval: this.pollingInterval,
+    });
+
+    this.engine.addProvider(
+      new HookedSubprovider({
+        getAccounts(cb: any) {
+          cb(null, [this.ethAddr]);
+        },
+        getPrivateKey(address: string, cb: any) {
+          //No private key for KMS
+          cb(null, "KMS does not expose private keys");
+        },
+        signTransaction(txParams: TxData, cb: any) {
+          const rawTx: string = this.signPayload(txParams);
+          cb(null, rawTx);
+        },
+        // signMessage({ data, from }: any, cb: any) {
+        //   const dataIfExists = data;
+        //   if (!dataIfExists) {
+        //     cb("No data to sign");
+        //   }
+        //   if (!tmp_wallets[from]) {
+        //     cb("Account not found");
+        //   }
+        //   let pkey = tmp_wallets[from].getPrivateKey();
+        //   const dataBuff = EthUtil.toBuffer(dataIfExists);
+        //   const msgHashBuff = EthUtil.hashPersonalMessage(dataBuff);
+        //   const sig = EthUtil.ecsign(msgHashBuff, pkey);
+        //   const rpcSig = EthUtil.toRpcSig(sig.v, sig.r, sig.s);
+        //   cb(null, rpcSig);
+        // },
+        // signPersonalMessage(...args: any[]) {
+        //   this.signMessage(...args);
+        // },
+      })
+    );
   }
 
+  /**
+   * @param msgHash A keccak256 hash of any arbitary message
+   * @param keyId The KMS key ID that we want to sign with
+   */
   sign = async (msgHash: Buffer, keyId: string) => {
     const params: KMS.SignRequest = {
       // key id or 'Alias/<alias>'
@@ -66,6 +120,9 @@ export class KMSSigner {
     return res;
   };
 
+  /**
+   * @param keyPairId keyPaidID is the keyID that we want to derive the DER encoded public key
+   */
   getPublicKey = async (keyPairId: string) => {
     return this.kms
       .getPublicKey({
@@ -74,6 +131,9 @@ export class KMSSigner {
       .promise();
   };
 
+  /**
+   * @param publicKey the DER encoded publick key that we want to convert to an ethereum address
+   */
   getEthereumAddress = (publicKey: Buffer): string => {
     // The public key is ASN1 encoded in a format according to
     // https://tools.ietf.org/html/rfc5480#section-2
@@ -92,6 +152,9 @@ export class KMSSigner {
     return EthAddr;
   };
 
+  /**
+   * @param plaintext Keccak256 Hash of ay arbitary text that we want KMS to sign and generate the signature
+   */
   findEthereumSig = async (plaintext: Buffer) => {
     //Get the signature from kms
     let signature = await this.sign(plaintext, this.keyId);
@@ -124,6 +187,13 @@ export class KMSSigner {
     return { r, s };
   };
 
+  /**
+   *
+   * @param msg the generated signature
+   * @param r Point r on elliptic curve
+   * @param s Point s on elliptic curve
+   * @param v Either 27 or 28
+   */
   recoverPubKeyFromSig = (msg: Buffer, r: BN, s: BN, v: number) => {
     let rBuffer = r.toBuffer();
     let sBuffer = s.toBuffer();
@@ -170,6 +240,7 @@ export class KMSSigner {
       this.ethAddr
     );
   };
+
   signPayload = async (payload: TxData) => {
     // The payload we want to sign
     // We put it with the dummy r,s,v so that we can serialized the FROM field
@@ -205,4 +276,26 @@ export class KMSSigner {
     const signedString = await this.signPayload(payload);
     return this.web3.eth.sendSignedTransaction(signedString);
   };
+
+  public send(
+    payload: JSONRPCRequestPayload,
+    callback: JSONRPCErrorCallback | Callback<JsonRPCResponse>
+  ): void {
+    return this.engine.send.call(this.engine, payload, callback);
+  }
+
+  public sendAsync(
+    payload: JSONRPCRequestPayload,
+    callback: JSONRPCErrorCallback | Callback<JsonRPCResponse>
+  ): void {
+    this.engine.sendAsync.call(this.engine, payload, callback);
+  }
+
+  public getAddress(idx?: number): string {
+    if (!idx) {
+      return this.ethAddr;
+    } else {
+      return this.ethAddr;
+    }
+  }
 }

@@ -203,18 +203,6 @@ export class KMSSigner {
 
   sendPayload = async (payload: TxData) => {
     const signedString = await this.signPayload(payload);
-    await this.web3.eth
-      .sendSignedTransaction(signedString)
-      .on(
-        "confirmation",
-        (confirmationNumber: number, receipt: TransactionReceipt) => {}
-      )
-      .on("receipt", (txReceipt: TransactionReceipt) => {
-        console.log(
-          "signAndSendTx txReceipt. Tx Address: " + txReceipt.transactionHash
-        );
-      })
-      .on("error", (error) => console.log(error));
-    return;
+    return this.web3.eth.sendSignedTransaction(signedString);
   };
 }

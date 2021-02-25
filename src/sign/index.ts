@@ -5,11 +5,18 @@ import BN from "bn.js";
 import ProviderEngine from "@trufflesuite/web3-provider-engine";
 // @ts-ignore
 import HookedSubprovider from "@trufflesuite/web3-provider-engine/subproviders/hooked-wallet";
+// @ts-ignore
+import ProviderSubprovider from "@trufflesuite/web3-provider-engine/subproviders/provider";
+// @ts-ignore
+import RpcProvider from "@trufflesuite/web3-provider-engine/subproviders/rpc";
+// @ts-ignore
+import WebsocketProvider from "@trufflesuite/web3-provider-engine/subproviders/websocket";
 import { JSONRPCRequestPayload, JSONRPCErrorCallback } from "ethereum-protocol";
-
+import Url from "url";
 import { KMS } from "aws-sdk";
 import { keccak256 } from "js-sha3";
 import { Transaction, TxData } from "ethereumjs-tx";
+
 const asn1 = require("asn1.js");
 
 export class KMSSigner {
@@ -100,6 +107,31 @@ export class KMSSigner {
         // },
       })
     );
+
+    if (typeof providerURL === "string") {
+      const url = providerURL;
+
+      const providerProtocol = (
+        Url.parse(url).protocol || "http:"
+      ).toLowerCase();
+
+      switch (providerProtocol) {
+        case "ws:":
+        case "wss:":
+          this.engine.addProvider(new WebsocketProvider({ rpcUrl: url }));
+          break;
+        default:
+          this.engine.addProvider(new RpcProvider({ rpcUrl: url }));
+      }
+    } else {
+      const provider = providerURL;
+      this.engine.addProvider(new ProviderSubprovider(provider));
+    }
+
+    // Required by the provider engine.
+    this.engine.start((err: any) => {
+      if (err) throw err;
+    });
   }
 
   /**

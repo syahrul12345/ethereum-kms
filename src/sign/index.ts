@@ -87,24 +87,30 @@ export class KMSSigner {
           const rawTx: string = this.signPayload(txParams);
           cb(null, rawTx);
         },
-        // signMessage({ data, from }: any, cb: any) {
-        //   const dataIfExists = data;
-        //   if (!dataIfExists) {
-        //     cb("No data to sign");
-        //   }
-        //   if (!tmp_wallets[from]) {
-        //     cb("Account not found");
-        //   }
-        //   let pkey = tmp_wallets[from].getPrivateKey();
-        //   const dataBuff = EthUtil.toBuffer(dataIfExists);
-        //   const msgHashBuff = EthUtil.hashPersonalMessage(dataBuff);
-        //   const sig = EthUtil.ecsign(msgHashBuff, pkey);
-        //   const rpcSig = EthUtil.toRpcSig(sig.v, sig.r, sig.s);
-        //   cb(null, rpcSig);
-        // },
-        // signPersonalMessage(...args: any[]) {
-        //   this.signMessage(...args);
-        // },
+        async signMessage({ data, from }: any, cb: any) {
+          const dataIfExists = data;
+          if (!dataIfExists) {
+            cb("No data to sign");
+          }
+          const dataBuff = ethutil.toBuffer(dataIfExists);
+          const msgHashBuff = ethutil.hashPersonalMessage(dataBuff);
+
+          const correctSig = await this.findEthereumSig(msgHashBuff);
+          const correctRecoveredPubAddr = this.findRightKey(
+            msgHashBuff,
+            correctSig.r,
+            correctSig.s,
+            this.ethAddr
+          );
+          const r = correctSig.r.toBuffer();
+          const s = correctSig.s.toBuffer();
+          const v = correctRecoveredPubAddr.v;
+          const rpcSig = ethutil.toRpcSig(v, r, s);
+          cb(null, rpcSig);
+        },
+        signPersonalMessage(...args: any[]) {
+          this.signMessage(...args);
+        },
       })
     );
 

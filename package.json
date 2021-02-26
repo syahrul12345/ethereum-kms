@@ -21,6 +21,7 @@
     "@babel/preset-env": "^7.13.5",
     "@trufflesuite/web3-provider-engine": "^15.0.13-1",
     "@types/ethereum-protocol": "^1.0.1",
+    "@types/ethereumjs-tx": "^2.0.0",
     "@types/web3": "^1.2.2",
     "asn1.js": "^5.4.1",
     "aws-sdk": "^2.850.0",

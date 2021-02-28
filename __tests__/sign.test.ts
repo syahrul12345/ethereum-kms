@@ -1,7 +1,23 @@
-import assert from "assert";
+import { KMSSigner } from "../src/sign/index";
+import { KMS } from "aws-sdk";
+describe("KMSSigner unit tests", () => {
+  //setup the KMS mocks here
+  const kms = new KMS();
+  kms.getPublicKey = jest.fn().mockImplementation(() => {
+    return "This is a public key";
+  });
+  kms.sign = jest.fn().mockImplementation((msgHash: Buffer, keyId: string) => {
+    return "This is a signed message";
+  });
 
-describe("KMSSigner class unit tests", () => {
-  it("Should be able to get the DER key from aws-kms", async () => {
-    assert.equal(0, 0);
+  it("We can check if the consumer called the class constructor", async () => {
+    const kmsSigner = new KMSSigner("", "", "", "", "", "kovan");
+    kmsSigner.kms = kms;
+    //Mock
+    const res = await kmsSigner.kms.getPublicKey({
+      KeyId: "123",
+    });
+
+    console.log(res);
   });
 });

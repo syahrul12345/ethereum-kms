@@ -10,18 +10,25 @@
     "type": "git",
     "url": "git+https://github.com/syahrul12345/ethereum-kms.git"
   },
+  "jest": {
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ]
+  },
   "scripts": {
     "compile": "tsc",
     "build": "rm -rf dist/ && tsc",
     "start": "NODE_ENV=production && node ./dist/src/index.js",
     "prepublishOnly": "npm run compile",
-    "test": "NODE_ENV=test jest \"/dist/__tests__/.*\\.test\\.js\""
+    "test": "NODE_ENV=test jest \"/__tests__/.*\\.test\\.ts\""
   },
   "dependencies": {
     "@babel/preset-env": "^7.13.5",
+    "@babel/preset-typescript": "^7.13.0",
     "asn1.js": "^5.4.1",
     "aws-sdk": "^2.850.0",
     "babel-jest": "^26.6.3",
+    "ethereum-kms": "^1.0.12",
     "jest": "^26.6.3",
     "js-sha3": "^0.8.0",
     "source-map": "^0.7.3",

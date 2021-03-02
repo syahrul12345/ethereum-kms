@@ -1,1 +1,1 @@
-jest.mock('aws-sdk')
+// jest.mock('aws-sdk')

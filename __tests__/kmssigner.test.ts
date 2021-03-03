@@ -14,6 +14,7 @@ describe("KMSSigner unit tests", () => {
   };
   const expectedResults = {
     der: "DER",
+    sign: "SIGN",
   };
   const kmsSigner = new KMSSigner(
     credentials.access_key,
@@ -24,19 +25,26 @@ describe("KMSSigner unit tests", () => {
     "kovan"
   );
 
-  //Mocks
-  kmsSigner.kms.getPublicKey = jest
-    .fn()
-    .mockImplementation(async (keyId: string) => {
+  class RequestMocker {
+    result: String;
+    constructor(result: string) {
+      this.result = result;
+    }
+    promise = () => {
       return new Promise((res, rej) => {
-        res("hey there");
+        res(this.result);
       });
-    });
+    };
+  }
+  //Mocks
+  kmsSigner.kms.getPublicKey = jest.fn().mockImplementation((keyId: string) => {
+    return new RequestMocker(expectedResults.der);
+  });
 
   kmsSigner.kms.sign = jest
     .fn()
     .mockImplementation((msgHash: Buffer, keyId: string) => {
-      return "This is a signed message";
+      return new RequestMocker(expectedResults.sign);
     });
 
   it("Should set up the state constant correctly", async () => {
@@ -50,14 +58,15 @@ describe("KMSSigner unit tests", () => {
     //@ts-ignore
     assert.strictEqual(web3provider.host, credentials.provider_url);
   });
+
   it("Should be able to get the correct DER public key from the function", async () => {
-    console.log(kmsSigner.getPublicKey("yahoo"));
-    const der = kmsSigner.getPublicKey(credentials.key_id);
-    // assert.strictEqual(der, expectedResults.der);
+    const der = await kmsSigner.getPublicKey(credentials.key_id);
+    assert.strictEqual(der, expectedResults.der);
   });
+
   it("Should be able to get the correct DER public key from state variable", async () => {
     const der = kmsSigner.pubKey;
-    // assert.strictEqual(der, expectedResults.der);
+    assert.strictEqual(der, expectedResults.der);
   });
   it("Should be able to get the correct ethereum address", async () => {});
   it("Should be able to generate the correct ethereum sig from signing eth address hash as message ", async () => {});
